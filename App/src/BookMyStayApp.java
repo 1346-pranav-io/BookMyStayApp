@@ -1,139 +1,111 @@
-/*
-================================================================================================================
-MAIN CLASS - UseCase1WelcomePage
+import java.util.*;
 
-Use Case 1: Creating a Welcome Page
-
-Description:
-This class demonstrates a Welcome Page that welcomes the users and shows the author's name and version of the Program.
-
-@author 1346-pranav-io
-@version 1.0
- */
-
-MAIN CLASS - BookMyStayApp
-
-Use Case 2: Displaying Room Types and Availability
-
-Description:
-This program demonstrates object-oriented modeling of hotel room types using abstraction, inheritance,
-encapsulation, and polymorphism. The system defines an abstract Room class that represents common room
-characteristics, while concrete classes (SingleRoom, DoubleRoom, and SuiteRoom) extend it to represent
-specific room types.
-
-Room objects are created when the application runs, and their availability is stored using simple
-variables. The program then displays the room details along with their availability in the console.
-
-@author 1346-pranav-io
-@version 2.0
-*/
-
-abstract class Room
-{
-    private int beds;
-    private int size;
+// Domain Model: Room
+class Room {
+    private String roomType;
     private double price;
+    private List<String> amenities;
 
-    public Room(int beds,int size,double price)
-    {
-        this.beds=beds;
-        this.size=size;
-        this.price=price;
+    public Room(String roomType, double price, List<String> amenities) {
+        this.roomType = roomType;
+        this.price = price;
+        this.amenities = amenities;
     }
 
-    public int getBeds()
-    {
-        return beds;
+    public String getRoomType() {
+        return roomType;
     }
 
-    public int getSize()
-    {
-        return size;
-    }
-
-    public double getPrice()
-    {
+    public double getPrice() {
         return price;
     }
 
-    public abstract String getRoomType();
+    public List<String> getAmenities() {
+        return amenities;
+    }
 
-    public void displayRoomDetails()
-    {
-        System.out.println("Room Type: "+getRoomType());
-        System.out.println("Beds: "+beds);
-        System.out.println("Size: "+size+" sq.ft");
-        System.out.println("Price per night: "+price);
+    public void displayDetails() {
+        System.out.println("Room Type: " + roomType);
+        System.out.println("Price: ₹" + price);
+        System.out.println("Amenities: " + amenities);
+        System.out.println("----------------------------");
     }
 }
 
-class SingleRoom extends Room
-{
-    public SingleRoom()
-    {
-        super(1,200,1000);
+// Inventory (State Holder)
+class Inventory {
+    private Map<String, Integer> availabilityMap;
+
+    public Inventory() {
+        availabilityMap = new HashMap<>();
     }
 
-    public String getRoomType()
-    {
-        return "Single Room";
-    }
-}
-
-class DoubleRoom extends Room
-{
-    public DoubleRoom()
-    {
-        super(2,350,1800);
+    public void addRoom(String roomType, int count) {
+        availabilityMap.put(roomType, count);
     }
 
-    public String getRoomType()
-    {
-        return "Double Room";
+    // READ-ONLY ACCESS
+    public int getAvailability(String roomType) {
+        return availabilityMap.getOrDefault(roomType, 0);
+    }
+
+    public Map<String, Integer> getAllAvailability() {
+        return Collections.unmodifiableMap(availabilityMap); // defensive programming
     }
 }
 
-class SuiteRoom extends Room
-{
-    public SuiteRoom()
-    {
-        super(3,600,3500);
-    }
+// Search Service (Separation of Concerns)
+class SearchService {
 
-    public String getRoomType()
-    {
-        return "Suite Room";
+    public static void searchAvailableRooms(Inventory inventory, Map<String, Room> roomMap) {
+        System.out.println("\n===== Available Rooms =====\n");
+
+        Map<String, Integer> availability = inventory.getAllAvailability();
+
+        for (String roomType : availability.keySet()) {
+            int count = availability.get(roomType);
+
+            // Validation Logic → only show available rooms
+            if (count > 0) {
+                Room room = roomMap.get(roomType);
+
+                System.out.println("Available Count: " + count);
+                room.displayDetails();
+            }
+        }
+
+        System.out.println("Search completed (Read-Only Operation)");
     }
 }
 
-public class BookMyStayApp
-{
-    public static void main(String args[])
-    {
-        System.out.println("Welcome to Hotel Booking Management System!");
-        System.out.println("Version: 1.0");
-        System.out.println("Author: 1346-pranav-io");
-        System.out.println("Version: 2.0");
-        System.out.println("Author: SAKET-2005");
-        System.out.println();
+// Main Class
+public class BookMyStayApp {
 
-        Room single=new SingleRoom();
-        Room doubleRoom=new DoubleRoom();
-        Room suite=new SuiteRoom();
+    public static void main(String[] args) {
 
-        int singleAvailability=5;
-        int doubleAvailability=3;
-        int suiteAvailability=2;
+        // Step 1: Create Room Objects (Domain Model)
+        Room single = new Room("Single", 2000,
+                Arrays.asList("WiFi", "AC", "TV"));
 
-        single.displayRoomDetails();
-        System.out.println("Available Rooms: "+singleAvailability);
-        System.out.println();
+        Room doubleRoom = new Room("Double", 3500,
+                Arrays.asList("WiFi", "AC", "TV", "Mini Fridge"));
 
-        doubleRoom.displayRoomDetails();
-        System.out.println("Available Rooms: "+doubleAvailability);
-        System.out.println();
+        Room deluxe = new Room("Deluxe", 5000,
+                Arrays.asList("WiFi", "AC", "TV", "Mini Fridge", "Balcony"));
 
-        suite.displayRoomDetails();
-        System.out.println("Available Rooms: "+suiteAvailability);
+        // Step 2: Store Room Objects
+        Map<String, Room> roomMap = new HashMap<>();
+        roomMap.put("Single", single);
+        roomMap.put("Double", doubleRoom);
+        roomMap.put("Deluxe", deluxe);
+
+        // Step 3: Setup Inventory (State Holder)
+        Inventory inventory = new Inventory();
+        inventory.addRoom("Single", 3);
+        inventory.addRoom("Double", 0);   // unavailable
+        inventory.addRoom("Deluxe", 2);
+
+        // Step 4: Guest searches rooms (READ-ONLY)
+        SearchService.searchAvailableRooms(inventory, roomMap);
     }
 }
